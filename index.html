@@ -51,6 +51,14 @@ section.lugar>h2{margin:0 0 14px;font-size:1.4rem;text-align:center}
 .jrow small{color:var(--muted);font-size:.78rem}
 .jrow .pct{margin-left:auto;font-weight:700;color:var(--green);min-width:52px;text-align:right}
 .jrow button{border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;padding:5px 9px;font-size:.8rem;cursor:pointer}
+.stat .pp{width:42px;text-align:right;font-weight:700;font-size:.85rem}
+.efect{text-align:center;font-size:.85rem;color:var(--muted);margin-bottom:4px}
+.efect b{color:var(--text);font-size:1rem}
+.resumen{display:flex;gap:8px;justify-content:center;margin:0 0 14px}
+.chip{flex:1;background:var(--input);border:1px solid var(--border);border-radius:12px;padding:8px 6px;text-align:center}
+.chip small{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.chip b{font-size:1.25rem;color:var(--green)}
+.chip.total{border-color:var(--green)}
 </style>
 </head>
 <body>
@@ -96,23 +104,23 @@ function build(lk,tk){
   b.appendChild(el("h3","",tk==="ataque"?"Ataque":"Defensa"));
   var w=el("div","chartwrap"),donut=el("div","donut"),ctr=el("b","","0<small>tiros</small>");
   donut.appendChild(ctr);w.appendChild(donut);
-  var st=el("div","stats");
+  var st=el("div","stats"),pps=[];
   CAMPOS.forEach(function(c){
     var r=el("div","stat");
     r.appendChild(el("span","dot"));r.lastChild.style.background=c[2];
     r.appendChild(el("label","",c[1]));
     var i=document.createElement("input");i.type="number";i.min="0";i.step="1";i.value=d[c[0]];
     i.addEventListener("input",function(){d[c[0]]=Math.max(0,parseInt(i.value)||0);paint();markDirty();});
-    r.appendChild(i);st.appendChild(r);
+    r.appendChild(i);var pp=el("span","pp","0%");pps.push(pp);r.appendChild(pp);st.appendChild(r);
   });
   w.appendChild(st);b.appendChild(w);
   var bar=el("div","bar"),segs=CAMPOS.map(function(c){var sp=el("span");sp.style.background=c[2];bar.appendChild(sp);return sp;});
-  b.appendChild(bar);
+  b.appendChild(bar);var ef=el("div","efect");b.appendChild(ef);
   function paint(){
     var t=d.g+d.d+d.p,gp=t?d.g/t*100:0,dp=t?d.d/t*100:0;
     donut.style.background=t?"conic-gradient(var(--green) 0 "+gp+"%,var(--yellow) "+gp+"% "+(gp+dp)+"%,var(--red) "+(gp+dp)+"% 100%)":"var(--border)";
     ctr.innerHTML=t+"<small>tiros</small>";
-    [d.g,d.d,d.p].forEach(function(v,k){segs[k].style.width=(t?v/t*100:0)+"%";});
+    [d.g,d.d,d.p].forEach(function(v,k){var pc=t?v/t*100:0;segs[k].style.width=pc+"%";pps[k].textContent=Math.round(pc)+"%";});ef.innerHTML="Efectividad total: <b>"+(t?Math.round((d.g+d.d)/t*1000)/10:0)+"%</b>";updateResumen(lk);
   }
   paint();
   var lw=el("div","links");lw.appendChild(el("h4","","Enlaces"));
@@ -171,10 +179,20 @@ function buildJugadas(d){
   return w;
 }
 
+var sums={};
+function updateResumen(lk){
+  var sm=sums[lk];if(!sm)return;
+  var W=0,T=0,html="";
+  TIPOS.forEach(function(t){
+    var d=data[lk][t[0]],tot=d.g+d.d+d.p,w=d.g+d.d;W+=w;T+=tot;
+    html+='<div class="chip"><small>'+t[1]+'</small><b>'+(tot?Math.round(w/tot*1000)/10:0)+'%</b></div>';
+  });
+  sm.innerHTML=html;
+}
 function render(){
   var app=document.getElementById("app");app.innerHTML="";
   LUGARES.forEach(function(l){
-    var sec=el("section","lugar");sec.appendChild(el("h2","",l[1]));
+    var sec=el("section","lugar");sec.appendChild(el("h2","",l[1]));var sm=el("div","resumen");sums[l[0]]=sm;sec.appendChild(sm);
     TIPOS.forEach(function(t){sec.appendChild(build(l[0],t[0]));});
     app.appendChild(sec);
   });
