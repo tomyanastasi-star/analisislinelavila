@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Line</title>
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--text:#16181d;--muted:#6b7280;--border:#e2e5ea;--green:#22c55e;--red:#ef4444;--yellow:#eab308;--input:#f0f2f5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1115;--card:#181b21;--text:#eceef2;--muted:#9aa1ad;--border:#2a2e37;--input:#232730;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1115;--card:#181b21;--text:#eceef2;--muted:#9aa1ad;--border:#2a2e37;--input:#232730;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 48px}
+h1{text-align:center;font-size:2.6rem;letter-spacing:.04em;margin:8px 0 28px}
+main{max-width:1100px;margin:0 auto;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+section.lugar{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px}
+section.lugar>h2{margin:0 0 14px;font-size:1.4rem;text-align:center}
+.bloque{border-top:1px solid var(--border);padding:14px 0 6px}
+.bloque h3{margin:0 0 12px;font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.chartwrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
+.donut{width:130px;height:130px;border-radius:50%;position:relative;flex:none;background:var(--border)}
+.donut::after{content:"";position:absolute;inset:24px;border-radius:50%;background:var(--card)}
+.donut b{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1;font-size:1.3rem;line-height:1}
+.donut b small{font-size:.65rem;color:var(--muted);font-weight:400;margin-top:3px}
+.stats{display:grid;gap:8px;flex:1;min-width:150px}
+.stat{display:flex;align-items:center;gap:8px;font-size:.88rem}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.stat label{flex:1}
+.stat input{width:64px;padding:6px 8px;border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;font-size:.95rem;text-align:center}
+.bar{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--border);margin:14px 0 4px}
+.bar span{display:block;height:100%;transition:width .25s}
+.links{margin-top:14px}
+.links h4{margin:0 0 8px;font-size:.8rem;color:var(--muted);font-weight:600}
+.link{display:flex;gap:6px;margin-bottom:6px}
+.link input{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;font-size:.85rem}
+.link a,.link button,.add{border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;padding:6px 10px;font-size:.8rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.add{margin-top:2px}
+.link button:hover,.add:hover,.link a:hover{border-color:var(--muted)}
+.jugadas{margin-top:14px}
+.jugadas h4{margin:0 0 8px;font-size:.8rem;color:var(--muted);font-weight:600}
+.jrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border)}
+.jrow .jn{flex:1 1 100%;min-width:0;padding:7px 9px;border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;font-size:.88rem}
+.jrow .jk{width:58px;padding:6px;border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;font-size:.9rem;text-align:center}
+.jrow small{color:var(--muted);font-size:.78rem}
+.jrow .pct{margin-left:auto;font-weight:700;color:var(--green);min-width:52px;text-align:right}
+.jrow button{border:1px solid var(--border);background:var(--input);color:var(--text);border-radius:8px;padding:5px 9px;font-size:.8rem;cursor:pointer}
+</style>
+</head>
+<body>
+<h1>Line</h1>
+<main id="app"></main>
+<script>
+var LUGARES=[["sanboi","Santboi"],["vrac","Vrac"],["burgos","Burgos"]];
+var TIPOS=[["ataque","Ataque"],["defensa","Defensa"]];
+var CAMPOS=[["g","Tiros ganados","var(--green)"],["d","Tiros ganados con dificultad","var(--yellow)"],["p","Tiros perdidos","var(--red)"]];
+var KEY="line-stats-v1";
+var data={};
+LUGARES.forEach(function(l){data[l[0]]={};TIPOS.forEach(function(t){data[l[0]][t[0]]={g:0,d:0,p:0,links:[]};});});
+try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);LUGARES.forEach(function(l){TIPOS.forEach(function(t){if(o[l[0]]&&o[l[0]][t[0]])data[l[0]][t[0]]=o[l[0]][t[0]];});});}}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}}
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e;}
+function norm(u){u=(u||"").trim();if(u&&!/^https?:\/\//i.test(u))u="https://"+u;return u;}
+function build(lk,tk){
+  var d=data[lk][tk],b=el("div","bloque"),refs={};
+  b.appendChild(el("h3","",tk==="ataque"?"Ataque":"Defensa"));
+  var w=el("div","chartwrap"),donut=el("div","donut"),ctr=el("b","","0<small>tiros</small>");
+  donut.appendChild(ctr);w.appendChild(donut);
+  var st=el("div","stats");
+  CAMPOS.forEach(function(c){
+    var r=el("div","stat");
+    r.appendChild(el("span","dot"));r.lastChild.style.background=c[2];
+    r.appendChild(el("label","",c[1]));
+    var i=document.createElement("input");i.type="number";i.min="0";i.step="1";i.value=d[c[0]];
+    i.addEventListener("input",function(){d[c[0]]=Math.max(0,parseInt(i.value)||0);paint();save();});
+    r.appendChild(i);st.appendChild(r);
+  });
+  w.appendChild(st);b.appendChild(w);
+  var bar=el("div","bar"),segs=CAMPOS.map(function(c){var sp=el("span");sp.style.background=c[2];bar.appendChild(sp);return sp;});
+  b.appendChild(bar);
+  function paint(){
+    var t=d.g+d.d+d.p,gp=t?d.g/t*100:0,dp=t?d.d/t*100:0;
+    donut.style.background=t?"conic-gradient(var(--green) 0 "+gp+"%,var(--yellow) "+gp+"% "+(gp+dp)+"%,var(--red) "+(gp+dp)+"% 100%)":"var(--border)";
+    ctr.innerHTML=t+"<small>tiros</small>";
+    [d.g,d.d,d.p].forEach(function(v,k){segs[k].style.width=(t?v/t*100:0)+"%";});
+  }
+  paint();
+  var lw=el("div","links");lw.appendChild(el("h4","","Enlaces"));
+  var list=el("div");lw.appendChild(list);
+  function drawLinks(){
+    list.innerHTML="";
+    d.links.forEach(function(u,idx){
+      var r=el("div","link"),i=document.createElement("input");
+      i.type="text";i.placeholder="Pega aquí un enlace";i.value=u;
+      var a=el("a","","Abrir");a.target="_blank";a.rel="noopener";
+      function ref(){var n=norm(i.value);if(n){a.href=n;a.style.visibility="visible";}else{a.removeAttribute("href");a.style.visibility="hidden";}}
+      i.addEventListener("input",function(){d.links[idx]=i.value;ref();save();});
+      ref();
+      var x=el("button","","✕");x.title="Quitar";
+      x.addEventListener("click",function(){d.links.splice(idx,1);save();drawLinks();});
+      r.appendChild(i);r.appendChild(a);r.appendChild(x);list.appendChild(r);
+    });
+  }
+  drawLinks();
+  var add=el("button","add","+ Añadir enlace");
+  add.addEventListener("click",function(){d.links.push("");save();drawLinks();var ins=list.querySelectorAll("input");if(ins.length)ins[ins.length-1].focus();});
+  lw.appendChild(add);if(tk==="ataque")b.appendChild(buildJugadas(d));b.appendChild(lw);
+  return b;
+}
+function buildJugadas(d){
+  if(!d.jugadas)d.jugadas=[];
+  var w=el("div","jugadas");w.appendChild(el("h4","","Jugadas que se hicieron en el partido"));
+  var list=el("div");w.appendChild(list);
+  function numInput(val,cb){var i=document.createElement("input");i.type="number";i.min="0";i.step="1";i.className="jk";i.value=val;i.addEventListener("input",function(){cb(Math.max(0,parseInt(i.value)||0));});return i;}
+  function draw(){
+    list.innerHTML="";
+    d.jugadas.forEach(function(j,idx){
+      var r=el("div","jrow");
+      var n=document.createElement("input");n.type="text";n.className="jn";n.placeholder="Nombre de la jugada";n.value=j.n||"";
+      n.addEventListener("input",function(){j.n=n.value;save();});
+      var pc=el("span","pct");
+      function upd(){pc.textContent=j.t>0?(Math.round(j.a/j.t*1000)/10)+"%":"–";}
+      r.appendChild(n);
+      r.appendChild(numInput(j.a||0,function(v){j.a=v;upd();save();}));
+      r.appendChild(el("small","","acertados de"));
+      r.appendChild(numInput(j.t||0,function(v){j.t=v;upd();save();}));
+      r.appendChild(el("small","","intentos"));
+      r.appendChild(pc);
+      var x=el("button","","✕");x.title="Quitar";
+      x.addEventListener("click",function(){d.jugadas.splice(idx,1);save();draw();});
+      r.appendChild(x);
+      upd();list.appendChild(r);
+    });
+  }
+  draw();
+  var add=el("button","add","+ Añadir jugada");
+  add.addEventListener("click",function(){d.jugadas.push({n:"",a:0,t:0});save();draw();var ins=list.querySelectorAll(".jn");if(ins.length)ins[ins.length-1].focus();});
+  w.appendChild(add);
+  return w;
+}
+var app=document.getElementById("app");
+LUGARES.forEach(function(l){
+  var sec=el("section","lugar");sec.appendChild(el("h2","",l[1]));
+  TIPOS.forEach(function(t){sec.appendChild(build(l[0],t[0]));});
+  app.appendChild(sec);
+});
+</script>
+</body>
+</html>
